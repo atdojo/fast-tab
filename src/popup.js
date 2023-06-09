@@ -1,7 +1,12 @@
-getTabs().then(tabs => {
-    sortTabsByWindowId(tabs)
+const SEARCH_DEBOUNCE_MILLISECONDS = 50
 
+getTabs().then(tabs => {
+    focusSearch()
+
+    sortTabsByWindowId(tabs)
     renderTabs(tabs)
+
+    addSearchEventListener()
 })
 
 function sortTabsByWindowId(tabs) {
@@ -14,6 +19,10 @@ function sortTabsByWindowId(tabs) {
         }
         return 0
     })
+}
+
+function focusSearch() {
+    document.getElementById('search').focus()
 }
 
 async function getTabs(queryOptions = {}) {
@@ -96,4 +105,40 @@ async function getCurrentWindow() {
             resolve,
         )
     })
+}
+
+function addSearchEventListener() {
+    const searchElement = document.getElementById('search')
+
+    let debounceTimeoutId = null
+    searchElement.addEventListener('input', (e) => {
+        if (debounceTimeoutId) {
+            clearTimeout(debounceTimeoutId)
+        }
+        setTimeout(() => {
+            onSearchInput(e.target.value)
+        }, SEARCH_DEBOUNCE_MILLISECONDS)
+    })
+}
+
+function onSearchInput(input) {
+    // improve search filter
+    const tabElements = document.getElementById('tabs').children
+    for(let i = 0; i < tabElements.length; i++) {
+        const tabElement = tabElements[i]
+        if (tabElement.classList.contains('list-tab')) {
+            // is tab item
+            if (isTabSearchHit(tabElement, input)) {
+                tabElement.classList.remove('d-none')
+            } else {
+                tabElement.classList.add('d-none')
+            }
+        }
+    }
+}
+
+function isTabSearchHit(tabElement, input) {
+    const titleLower = tabElement.lastElementChild.firstElementChild.innerText.toLowerCase()
+    const inputLower = input.toLowerCase()
+    return titleLower.includes(inputLower)
 }

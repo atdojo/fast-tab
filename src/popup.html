@@ -6,10 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fast Tab</title>
     <style>
+        :root {
+            --color-black: #0b0f14;
+            --color-white: #f4f4f5;
+            --color-primary: rgb(63, 144, 209);
+            --color-secondary: #F97583;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--color-white);
+            color: var(--color-dark);
+        }
+
+        body.dark {
+            background-color: var(--color-dark);
+            color: var(--color-white);
         }
 
         html, body {
@@ -20,7 +37,7 @@
         #tabs {
             width: 100%;
             display: flex;
-            gap: 16px;
+            gap: 24px;
             justify-content: center;
             flex-direction: column;
             padding: 16px;
@@ -44,6 +61,10 @@
             align-items: center;
         }
 
+        .list-tab--selected {
+            background-color: ;
+        }
+
         .list-tab-content {
             display: flex;
             justify-content: center;
@@ -57,9 +78,22 @@
         .list-tab-info {
             font-size: 12px;
         }
+
+        #search {
+            font-size: 22px;
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            outline: none;
+        }
+
+        .d-none {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <input id="search" type="text" placeholder="Fast Tab">
     <div id="tabs"></div>
     <script src="popup.js"></script>
 </body>
