@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Tab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 500px;
+            height: 600px;
+        }
+
+        #tabs {
+            width: 100%;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .list-tab-icon {
+            width: 24px;
+            object-fit: contain;
+            height: 24px;
+            margin-right: 16px;
+        }
+
+        .list-window-title {
+            margin-right: 16px;
+            font-size: 14px;
+            font-weight: bold;
+        }         
+
+        .list-tab, .list-window {
+            display: flex;
+            align-items: center;
+        }
+
+        .list-tab-content {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .list-tab-title {
+            font-size: 14px;
+        }
+
+        .list-tab-info {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="tabs"></div>
+    <script src="popup.js"></script>
+</body>
+</html>
