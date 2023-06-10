@@ -23,3 +23,12 @@ Hello World :close
 `:mute` - Muted all filtered tabs  
 `:unmute` - Unmute all filtered tabs  
 `:reload` - Reload all filtered tabs
+
+# Installation
+1. Download [Zip](https://github.com/atdojo/fast-tab/archive/refs/heads/main.zip)
+2. Unzip
+3. Go to [chrome://extensions/](chrome://extensions/)
+4. Enable developer mode (right top corner)
+5. Click on "Load unpacked"
+6. Select "fast-tab-main"
+7. Done. Happy tabbing
