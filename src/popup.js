@@ -1,4 +1,5 @@
 const SEARCH_DEBOUNCE_MILLISECONDS = 50
+const COMMAND_EXECUTE_DEBOUNCE_MILLISECONDS = 100
 const LIST_TAB_CLASS = 'list-tab'
 const LIST_SEARCH_IGNORE_CLASS = 'list-search-ignore'
 const LIST_TAB_VISIBLE_QUERY_SELECOR = '.' + LIST_TAB_CLASS + ':not(.d-none)'
@@ -16,33 +17,34 @@ const TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS = 1000
 const TAB_ID_SEARCH_IN_NEW_TAB = 'search-in-new-tab'
 const WINDOW_ID_SEARCH_IN_NEW_TAB = TAB_ID_SEARCH_IN_NEW_TAB
 const COMMAND_SEARCH_PREFIX = ':'
-const COMMANDS = ['close', 'reload', 'mute', 'unmute']
+const COMMANDS = ['close', 'reload', 'mute', 'unmute', 'detach', 'detachsingle', 'merge']
 
 const searchElement = document.getElementById('search')
 const tabListRoot = document.getElementById('tabs')
 const commandSuggestionsRoot = document.getElementById('command-suggestions')
 const loadingOverlayRoot = document.getElementById('loading-overlay')
+let debounceTimeoutIdCommandExecution = null
 
 function reloadAllTabs() {
     tabListRoot.innerHTML = 'loading...'
     getTabs().then(tabs => {
         tabListRoot.innerHTML = ''
         focusSearch()
-    
+
         sortTabsByWindowId(tabs)
         renderTabs(tabs)
-    
+
         addSearchEventListener()
         addKeyboardEventListeners()
         addCommandSuggestions()
         addUpdateChromeTabTimestamps()
         setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
-    
+
         // timeout until it renders tabs
         setTimeout(() => {
             selectFirstElementInTabList()
         }, 10)
-    
+
         onSearchInput('')
     })
 }
@@ -132,7 +134,6 @@ function getTabElement(tab) {
 
     const muted = document.createElement('div')
     muted.classList.add(LIST_TAB_TIMESTAMP_CLASS)
-    console.log(tab)
     if (tab.mutedInfo?.muted) {
         muted.innerText = 'muted'
     }
@@ -292,42 +293,40 @@ function addKeyboardEventListeners() {
     window.addEventListener('keydown', onKeydown)
 }
 
-async function handleCommandOnKeydownEnter(command) {
+async function executeCommand(command) {
     displayLoadingOverlay()
     searchElement.blur()
 
     const tabIds = getFilteredTabIds()
-    if (command === 'close') {
-        await new Promise(resolve => {
-            chrome.tabs.remove(tabIds, resolve)
-        })
-    }
-    if (command === 'reload') {
-        for(let i = 0; i < tabIds.length; i++) {
-            await new Promise(resolve => {
-                chrome.tabs.reload(tabIds[i], resolve)
-            })
-        }
-    }
-    if (command === 'mute') {
-        for(let i = 0; i < tabIds.length; i++) {
-            await new Promise(resolve => {
-                chrome.tabs.update(tabIds[i], { muted: true }, resolve)
-            })
-        }
-    }
-    if (command === 'unmute') {
-        for(let i = 0; i < tabIds.length; i++) {
-            await new Promise(resolve => {
-                chrome.tabs.update(tabIds[i], { muted: false }, resolve)
-            })
-        }
-    }
+    const response = await new Promise(resolve => {
+        chrome.runtime.sendMessage(
+            chrome.runtime.id,
+            { command: "execute.command", payload: { tabIds, command } },
+            resolve,
+        )
+    })
 
     displayLoadingOverlay(false)
     searchElement.value = ''
     focusSearch()
     reloadAllTabs()
+}
+
+async function handleCommandOnKeydownEnter(command) {
+    if (debounceTimeoutIdCommandExecution) {
+        clearTimeout(debounceTimeoutIdCommandExecution)
+    }
+
+    debounceTimeoutIdCommandExecution = setTimeout(() => {
+        executeCommand(command)
+    }, COMMAND_EXECUTE_DEBOUNCE_MILLISECONDS)
+}
+
+async function getAllWindowIds() {
+    const windows = new Promise(resolve => {
+        chrome.windows.getAll({ populate: false }, resolve)
+    }) 
+    return windows.map(w => w.id)
 }
 
 function displayLoadingOverlay(display = true) {
@@ -413,7 +412,6 @@ function formatTimestampTimeAgo(date) {
     const minutes = Math.floor(diffInMilliseconds / (1000 * 60))
     const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60))
     const days = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24))
-    console.log(now, date, diffInMilliseconds, seconds)
 
     if (days > 0) {
         return days === 1 ? '1 day ago' : days + ' days ago'
@@ -482,4 +480,12 @@ function addCommandSuggestions() {
     })
 }
 
+function log(message) {
+    chrome.runtime.sendMessage(
+        chrome.runtime.id,
+        { command: 'log', payload: message },
+    )
+}
+
 reloadAllTabs()
+
