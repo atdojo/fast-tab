@@ -35,8 +35,8 @@ function reloadAllTabs() {
         addSearchEventListener()
         addKeyboardEventListeners()
         addCommandSuggestions()
+        addUpdateChromeTabTimestamps()
         setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
-    
     
         // timeout until it renders tabs
         setTimeout(() => {
