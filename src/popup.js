@@ -14,8 +14,12 @@ const KEY_CODE_ARROW_DOWN = 40
 const TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS = 1000
 const TAB_ID_SEARCH_IN_NEW_TAB = 'search-in-new-tab'
 const WINDOW_ID_SEARCH_IN_NEW_TAB = TAB_ID_SEARCH_IN_NEW_TAB
+const COMMAND_SEARCH_PREFIX = ':'
+const COMMANDS = ['close', 'reload', 'mute', 'unmute']
+
 const searchElement = document.getElementById('search')
 const tabListRoot = document.getElementById('tabs')
+const commandSuggestionsRoot = document.getElementById('command-suggestions')
 
 getTabs().then(tabs => {
     focusSearch()
@@ -25,14 +29,16 @@ getTabs().then(tabs => {
 
     addSearchEventListener()
     addKeyboardEventListeners()
+    addCommandSuggestions()
+    setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
+
 
     // timeout until it renders tabs
     setTimeout(() => {
         selectFirstElementInTabList()
     }, 10)
 
-    // add chrome tabs information
-    setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
+    onSearchInput('')
 })
 
 function sortTabsByWindowId(tabs) {
@@ -159,6 +165,10 @@ function addSearchEventListener() {
 
 function onSearchInput(input) {
     // improve search filter
+    const { search, command } = parseSearch(input)
+
+    handleCommandSuggestions(command)
+
     const tabElements = tabListRoot.children
     for (let i = 0; i < tabElements.length; i++) {
         const tabElement = tabElements[i]
@@ -166,7 +176,7 @@ function onSearchInput(input) {
             && !tabElement.classList.contains(LIST_SEARCH_IGNORE_CLASS)
         ) {
             // is tab item that should be filtered
-            if (isTabSearchHit(tabElement, input)) {
+            if (isTabSearchHit(tabElement, search)) {
                 tabElement.classList.remove('d-none')
             } else {
                 tabElement.classList.add('d-none')
@@ -174,6 +184,16 @@ function onSearchInput(input) {
         }
     }
     selectFirstElementInTabList()
+}
+
+function parseSearch(input) {
+    const searchSplit = input.split(COMMAND_SEARCH_PREFIX)
+    const search = searchSplit[0].trim()
+    const command = searchSplit[1]
+    return {
+        search,
+        command,
+    }
 }
 
 function isTabSearchHit(tabElement, input) {
@@ -257,23 +277,63 @@ function addKeyboardEventListeners() {
     window.addEventListener('keydown', onKeydown)
 }
 
+function handleCommandOnKeydownEnter(command) {
+    const tabIds = getFilteredTabIds()
+    if (command === 'close') {
+        chrome.tabs.remove(tabIds)
+    }
+    if (command === 'reload') {
+        tabIds.forEach(tabId =>  chrome.tabs.reload(tabId))
+    }
+    if (command === 'mute') {
+        tabIds.forEach(tabId =>  chrome.tabs.update(tabId,  { muted: true }))
+    }
+    if (command === 'unmute') {
+        tabIds.forEach(tabId =>  chrome.tabs.update(tabId,  { muted: false }))
+    }
+}
+
+function getFilteredTabIds() {
+    const tabIds = []
+    for (let i = 0; i < tabListRoot.children.length; i++) {
+        const tabElement = tabListRoot.children[i]
+        if (!tabElement.classList.contains('d-none')) {
+            const tabId = tabElement.getAttribute('data-tab-id')
+            if (tabId && parseInt(tabId)) {
+                tabIds.push(parseInt(tabId))
+            }
+        }
+    }
+    return tabIds
+}
+
+function handleKeydownEnter(e) {
+    e.preventDefault()
+
+    const { command } = parseSearch(searchElement.value)
+    if (command !== undefined) {
+        handleCommandOnKeydownEnter(command)
+        return
+    }
+
+    const selectedTab = getSelectedTabInList()
+    if (selectedTab === null) {
+        return
+    }
+
+    const tabId = selectedTab.getAttribute('data-tab-id')
+    const windowId = selectedTab.getAttribute('data-window-id')
+    if (tabId === TAB_ID_SEARCH_IN_NEW_TAB) {
+        chrome.tabs.create({ url: 'https://www.google.com/search?q=' + searchElement.value })
+        return
+    }
+
+    focusChromeTab(parseInt(tabId), parseInt(windowId))
+}
+
 function onKeydown(e) {
     if (e.keyCode === KEY_CODE_ENTER) {
-        e.preventDefault()
-        const selectedTab = getSelectedTabInList()
-        if (selectedTab === null) {
-            return
-        }
-
-        const tabId = selectedTab.getAttribute('data-tab-id')
-        const windowId = selectedTab.getAttribute('data-window-id')
-        if (tabId === TAB_ID_SEARCH_IN_NEW_TAB) {
-            chrome.tabs.create({ url: 'https://www.google.com/search?q=' + searchElement.value })
-            return
-        }
-
-
-        focusChromeTab(parseInt(tabId), parseInt(windowId))
+        handleKeydownEnter(e)
     }
     else if (e.keyCode === KEY_CODE_ARROW_UP) {
         e.preventDefault()
@@ -330,5 +390,46 @@ async function addUpdateChromeTabTimestamps() {
             const timestampFormatted = formatTimestampTimeAgo(tabTimestamps[tabId])
             tabElement.querySelector("." + LIST_TAB_TIMESTAMP_CLASS).innerText = timestampFormatted
         }
+    })
+}
+
+function displayCommandSuggestions(display = true) {
+    if (display) {
+        commandSuggestionsRoot.classList.remove('d-none')
+    } else {
+        commandSuggestionsRoot.classList.add('d-none')
+    }
+}
+
+function handleCommandSuggestions(command) {
+    if (command === undefined) {
+        commandSuggestionsRoot.classList.add('d-none')
+        return // no command, not even prefix typed
+    }
+    if (COMMANDS.includes(command.trim())) {
+        commandSuggestionsRoot.classList.add('d-none')
+        return // command typed
+    }
+
+    commandSuggestionsRoot.classList.remove('d-none')
+
+    const suggestionElements = commandSuggestionsRoot.children
+    for (let i = 0; i < suggestionElements.length; i++) {
+        const element = suggestionElements[i]
+        // is tab item that should be filtered
+        if (element.innerText.includes(command)) {
+            element.classList.remove('d-none')
+        } else {
+            element.classList.add('d-none')
+        }
+    }
+}
+
+function addCommandSuggestions() {
+    COMMANDS.forEach(command => {
+        const commandElement = document.createElement('div')
+        commandElement.classList.add('command-suggestion')
+        commandElement.innerText = command
+        commandSuggestionsRoot.appendChild(commandElement)
     })
 }

@@ -90,13 +90,23 @@
         }
 
         .d-none {
-            display: none;
+            display: none !important;
+        }
+
+        #command-suggestions {
+            background-color: white;
+            color: var(--color-primary);
+            font-weight: bold;
+            padding: 24px 8px;
+            display: flex;
+            gap: 8px;
         }
     </style>
 </head>
 <body>
     <div id="search-container">
         <input id="search" type="text" placeholder="Fast Tab">
+        <div id="command-suggestions"></div>
     </div>
     <div id="tabs"></div>
     <script src="popup.js"></script>
