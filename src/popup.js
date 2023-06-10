@@ -73,20 +73,30 @@ async function getTabs(queryOptions = {}) {
 
 async function renderTabs(tabs) {
     let lastWindowId = null
+    let lastWindowElement = null
+    let tabCounterWindow = 0
     tabListRoot.innerHTML = ''
-    for (let i = 0; i < tabs.length; i++) {
+
+    for (let i = 1; i < tabs.length; i++) {
         const tab = tabs[i]
         if (lastWindowId !== tab.windowId) {
-            lastWindowId = tab.windowId
+            if (lastWindowElement) {
+                lastWindowElement.querySelector('.list-window-tab-counter').innerText = tabCounterWindow + (tabCounterWindow === 1 ? ' tab' : ' tabs')
+                tabCounterWindow = 0
+            }
             const windowElement = await getTabWindowElement(tab)
             tabListRoot.appendChild(windowElement)
+            lastWindowId = tab.windowId
+            lastWindowElement = windowElement
         }
+        tabCounterWindow += 1
         tabListRoot.appendChild(getTabElement(tab))
     }
+    lastWindowElement.querySelector('.list-window-tab-counter').innerText = tabCounterWindow + (tabCounterWindow === 1 ? ' tab' : ' tabs')
     tabListRoot.appendChild(getTabElementSearchInNewTab())
 }
 
-async function getTabWindowElement(tab) {
+async function getTabWindowElement(tab, tabCounter) {
     const el = document.createElement('div')
     el.classList.add(LIST_WINDOW_CLASS)
 
@@ -98,7 +108,11 @@ async function getTabWindowElement(tab) {
 
     const info = document.createElement('div')
     info.classList.add('list-window-info')
-    info.innerText = tab.windowId
+
+    const tabCounterElement = document.createElement('div')
+    tabCounterElement.classList.add('list-window-tab-counter')
+    
+    info.appendChild(tabCounterElement)
 
     el.appendChild(title)
     el.appendChild(info)

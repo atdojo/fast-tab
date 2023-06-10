@@ -68,13 +68,20 @@ async function executeCommand(command, tabIds) {
     }
     if (command === 'merge') {
         // create new window, move all tabs
-        const newWindow = await new Promise(resolve => {
-            chrome.windows.create({ tabId: tabIds[0], focused: false }, resolve)
-        })
-        for (let i = 1; i < tabIds.length; i++) {
+        const newWindow = await getCurrentWindow()
+        for (let i = 0; i < tabIds.length; i++) {
             await new Promise(resolve => {
                 chrome.tabs.move(tabIds[i], { windowId: newWindow.id, index: -1 }, resolve)
             })
         }
     }
+}
+
+async function getCurrentWindow() {
+    return new Promise(resolve => {
+        chrome.windows.getCurrent(
+            {},
+            resolve
+          )
+    })
 }
