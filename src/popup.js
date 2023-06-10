@@ -4,11 +4,14 @@ const LIST_SEARCH_IGNORE_CLASS = 'list-search-ignore'
 const LIST_TAB_VISIBLE_QUERY_SELECOR = '.' + LIST_TAB_CLASS + ':not(.d-none)'
 const LIST_WINDOW_CLASS = 'list-window'
 const LIST_TAB_SELECTED_CLASS = 'list-tab--selected'
+const LIST_TAB_INFO_CLASS = 'list-tab-info'
+const LIST_TAB_TIMESTAMP_CLASS = 'list-tab-timestamp'
 const KEY_CODE_ENTER = 13
 const KEY_CODE_ARROW_LEFT = 37
 const KEY_CODE_ARROW_UP = 38
 const KEY_CODE_ARROW_RIGHT = 39
 const KEY_CODE_ARROW_DOWN = 40
+const TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS = 1000
 const TAB_ID_SEARCH_IN_NEW_TAB = 'search-in-new-tab'
 const WINDOW_ID_SEARCH_IN_NEW_TAB = TAB_ID_SEARCH_IN_NEW_TAB
 const searchElement = document.getElementById('search')
@@ -27,6 +30,9 @@ getTabs().then(tabs => {
     setTimeout(() => {
         selectFirstElementInTabList()
     }, 10)
+
+    // add chrome tabs information
+    setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
 })
 
 function sortTabsByWindowId(tabs) {
@@ -106,8 +112,12 @@ function getTabElement(tab) {
     content.appendChild(title)
 
     const info = document.createElement('div')
-    info.classList.add('list-tab-info')
-    info.innerText = "info"
+    info.classList.add(LIST_TAB_INFO_CLASS)
+
+    const timestamp = document.createElement('div')
+    timestamp.classList.add(LIST_TAB_TIMESTAMP_CLASS)
+
+    info.appendChild(timestamp)
     content.appendChild(info)
 
     el.appendChild(icon)
@@ -280,3 +290,45 @@ function focusChromeTab(tabId, windowId) {
     chrome.tabs.update(tabId, { active: true })
 }
 
+async function getChromeTabTimestamps() {
+    const message = await new Promise(resolve => {
+        chrome.runtime.sendMessage(
+            chrome.runtime.id,
+            { command: "get.tabIdTimestamps" },
+            resolve,
+        )
+    })
+    return message.payload
+}
+
+function formatTimestampTimeAgo(date) {
+    const now = new Date()
+    const diffInMilliseconds = now - new Date(date)
+    const seconds = Math.floor(diffInMilliseconds / 1000)
+    const minutes = Math.floor(diffInMilliseconds / (1000 * 60))
+    const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60))
+    const days = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24))
+    console.log(now, date, diffInMilliseconds, seconds)
+
+    if (days > 0) {
+        return days === 1 ? '1 day ago' : days + ' days ago'
+    }
+    if (hours > 0) {
+        return hours === 1 ? '1 hour ago' : hours + ' hours ago'
+    }
+    if (minutes > 0) {
+        return minutes === 1 ? '1 minute ago' : minutes + ' minutes ago'
+    }
+    return seconds === 1 ? '1 second ago' : seconds + ' seconds ago'
+}
+
+async function addUpdateChromeTabTimestamps() {
+    const tabTimestamps = await getChromeTabTimestamps()
+    Object.keys(tabTimestamps).forEach(tabId => {
+        const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`)
+        if (tabElement) {
+            const timestampFormatted = formatTimestampTimeAgo(tabTimestamps[tabId])
+            tabElement.querySelector("." + LIST_TAB_TIMESTAMP_CLASS).innerText = timestampFormatted
+        }
+    })
+}

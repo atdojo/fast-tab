@@ -8,6 +8,9 @@
     "action": {
         "default_popup": "src/popup.html"
     },
+    "background": {
+        "service_worker": "src/service_worker.js"
+    },
     "commands": {
         "_execute_action": {
             "suggested_key": {
