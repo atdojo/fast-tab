@@ -7,7 +7,8 @@
     <title>Fast Tab</title>
     <style>
         :root {
-            --color-black: #0b0f14;
+            --color-black: rgb(11, 15, 20);
+            --color-black-translucent: rgba(11, 15, 20, 0.3);
             --color-white: #f4f4f5;
             --color-primary: rgb(63, 144, 209);
             --color-primary-translucent: rgba(63, 144, 209, 0.3);
@@ -101,9 +102,27 @@
             display: flex;
             gap: 8px;
         }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            font-size: 48px;
+            font-weight: bold;
+            background-color: var(--color-black);
+            color: var(--color-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
+    <div id="loading-overlay" class="d-none">
+        Loading...
+    </div>
     <div id="search-container">
         <input id="search" type="text" placeholder="Fast Tab">
         <div id="command-suggestions"></div>

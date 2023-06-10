@@ -20,26 +20,31 @@ const COMMANDS = ['close', 'reload', 'mute', 'unmute']
 const searchElement = document.getElementById('search')
 const tabListRoot = document.getElementById('tabs')
 const commandSuggestionsRoot = document.getElementById('command-suggestions')
+const loadingOverlayRoot = document.getElementById('loading-overlay')
 
-getTabs().then(tabs => {
-    focusSearch()
-
-    sortTabsByWindowId(tabs)
-    renderTabs(tabs)
-
-    addSearchEventListener()
-    addKeyboardEventListeners()
-    addCommandSuggestions()
-    setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
-
-
-    // timeout until it renders tabs
-    setTimeout(() => {
-        selectFirstElementInTabList()
-    }, 10)
-
-    onSearchInput('')
-})
+function reloadAllTabs() {
+    tabListRoot.innerHTML = 'loading...'
+    getTabs().then(tabs => {
+        tabListRoot.innerHTML = ''
+        focusSearch()
+    
+        sortTabsByWindowId(tabs)
+        renderTabs(tabs)
+    
+        addSearchEventListener()
+        addKeyboardEventListeners()
+        addCommandSuggestions()
+        setInterval(addUpdateChromeTabTimestamps, TAB_TIMESTAMP_UPDATE_INTERVAL_IN_MILLISECONDS)
+    
+    
+        // timeout until it renders tabs
+        setTimeout(() => {
+            selectFirstElementInTabList()
+        }, 10)
+    
+        onSearchInput('')
+    })
+}
 
 function sortTabsByWindowId(tabs) {
     tabs.sort((a, b) => {
@@ -277,19 +282,49 @@ function addKeyboardEventListeners() {
     window.addEventListener('keydown', onKeydown)
 }
 
-function handleCommandOnKeydownEnter(command) {
+async function handleCommandOnKeydownEnter(command) {
+    displayLoadingOverlay()
+    searchElement.blur()
+
     const tabIds = getFilteredTabIds()
     if (command === 'close') {
-        chrome.tabs.remove(tabIds)
+        await new Promise(resolve => {
+            chrome.tabs.remove(tabIds, resolve)
+        })
     }
     if (command === 'reload') {
-        tabIds.forEach(tabId =>  chrome.tabs.reload(tabId))
+        for(let i = 0; i < tabIds.length; i++) {
+            await new Promise(resolve => {
+                chrome.tabs.reload(tabIds[i], resolve)
+            })
+        }
     }
     if (command === 'mute') {
-        tabIds.forEach(tabId =>  chrome.tabs.update(tabId,  { muted: true }))
+        for(let i = 0; i < tabIds.length; i++) {
+            await new Promise(resolve => {
+                chrome.tabs.update(tabIds[i], { muted: true }, resolve)
+            })
+        }
     }
     if (command === 'unmute') {
-        tabIds.forEach(tabId =>  chrome.tabs.update(tabId,  { muted: false }))
+        for(let i = 0; i < tabIds.length; i++) {
+            await new Promise(resolve => {
+                chrome.tabs.update(tabIds[i], { muted: false }, resolve)
+            })
+        }
+    }
+
+    displayLoadingOverlay(false)
+    searchElement.value = ''
+    focusSearch()
+    reloadAllTabs()
+}
+
+function displayLoadingOverlay(display = true) {
+    if (display) {
+        loadingOverlayRoot.classList.remove('d-none')
+    } else {
+        loadingOverlayRoot.classList.add('d-none')
     }
 }
 
@@ -433,3 +468,5 @@ function addCommandSuggestions() {
         commandSuggestionsRoot.appendChild(commandElement)
     })
 }
+
+reloadAllTabs()
