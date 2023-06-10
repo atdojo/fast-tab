@@ -6,6 +6,7 @@ const LIST_WINDOW_CLASS = 'list-window'
 const LIST_TAB_SELECTED_CLASS = 'list-tab--selected'
 const LIST_TAB_INFO_CLASS = 'list-tab-info'
 const LIST_TAB_TIMESTAMP_CLASS = 'list-tab-timestamp'
+const LIST_TAB_MUTED_CLASS = 'list-tab-muted'
 const KEY_CODE_ENTER = 13
 const KEY_CODE_ARROW_LEFT = 37
 const KEY_CODE_ARROW_UP = 38
@@ -127,8 +128,17 @@ function getTabElement(tab) {
 
     const timestamp = document.createElement('div')
     timestamp.classList.add(LIST_TAB_TIMESTAMP_CLASS)
+    timestamp.classList.add('d-none')
+
+    const muted = document.createElement('div')
+    muted.classList.add(LIST_TAB_TIMESTAMP_CLASS)
+    console.log(tab)
+    if (tab.mutedInfo?.muted) {
+        muted.innerText = 'muted'
+    }
 
     info.appendChild(timestamp)
+    info.appendChild(muted)
     content.appendChild(info)
 
     el.appendChild(icon)
@@ -423,7 +433,9 @@ async function addUpdateChromeTabTimestamps() {
         const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`)
         if (tabElement) {
             const timestampFormatted = formatTimestampTimeAgo(tabTimestamps[tabId])
-            tabElement.querySelector("." + LIST_TAB_TIMESTAMP_CLASS).innerText = timestampFormatted
+            const el = tabElement.querySelector("." + LIST_TAB_TIMESTAMP_CLASS)
+            el.innerText = timestampFormatted
+            el.classList.remove('d-none')
         }
     })
 }
@@ -461,6 +473,7 @@ function handleCommandSuggestions(command) {
 }
 
 function addCommandSuggestions() {
+    commandSuggestionsRoot.innerHTML = ''
     COMMANDS.forEach(command => {
         const commandElement = document.createElement('div')
         commandElement.classList.add('command-suggestion')
