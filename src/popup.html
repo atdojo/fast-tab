@@ -10,6 +10,7 @@
             --color-black: #0b0f14;
             --color-white: #f4f4f5;
             --color-primary: rgb(63, 144, 209);
+            --color-primary-translucent: rgba(63, 144, 209, 0.3);
             --color-secondary: #F97583;
         }
 
@@ -37,10 +38,8 @@
         #tabs {
             width: 100%;
             display: flex;
-            gap: 24px;
             justify-content: center;
             flex-direction: column;
-            padding: 16px;
         }
 
         .list-tab-icon {
@@ -59,10 +58,11 @@
         .list-tab, .list-window {
             display: flex;
             align-items: center;
+            padding: 16px 24px;
         }
 
         .list-tab--selected {
-            background-color: ;
+            background-color: var(--color-primary-translucent);
         }
 
         .list-tab-content {

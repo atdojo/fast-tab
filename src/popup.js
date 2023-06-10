@@ -1,4 +1,16 @@
 const SEARCH_DEBOUNCE_MILLISECONDS = 50
+const LIST_TAB_CLASS = 'list-tab'
+const LIST_TAB_VISIBLE_QUERY_SELECOR = '.' + LIST_TAB_CLASS + ':not(.d-none)'
+const LIST_WINDOW_CLASS = 'list-window'
+const LIST_TAB_SELECTED_CLASS = 'list-tab--selected'
+const KEY_CODE_ENTER = 13
+const KEY_CODE_ARROW_LEFT = 37
+const KEY_CODE_ARROW_UP = 38
+const KEY_CODE_ARROW_RIGHT = 39
+const KEY_CODE_ARROW_DOWN = 40
+
+const searchElement = document.getElementById('search')
+const tabListRoot = document.getElementById('tabs')
 
 getTabs().then(tabs => {
     focusSearch()
@@ -7,6 +19,10 @@ getTabs().then(tabs => {
     renderTabs(tabs)
 
     addSearchEventListener()
+    addKeyboardEventListeners()
+
+    // timeout until it renders html
+    setTimeout(selectFirstElementInTabList, 1)
 })
 
 function sortTabsByWindowId(tabs) {
@@ -22,7 +38,7 @@ function sortTabsByWindowId(tabs) {
 }
 
 function focusSearch() {
-    document.getElementById('search').focus()
+    searchElement.focus()
 }
 
 async function getTabs(queryOptions = {}) {
@@ -33,21 +49,21 @@ async function getTabs(queryOptions = {}) {
 
 async function renderTabs(tabs) {
     let lastWindowId = null
-    const tabsContainer = document.getElementById('tabs')
+    tabListRoot.innerHTML = ''
     for(let i = 0; i < tabs.length; i++) {
         const tab = tabs[i]
         if (lastWindowId !== tab.windowId) {
             lastWindowId = tab.windowId
             const windowElement = await getTabWindowElement(tab)
-            tabsContainer.appendChild(windowElement)
+            tabListRoot.appendChild(windowElement)
         }
-        tabsContainer.appendChild(getTabElement(tab))
+        tabListRoot.appendChild(getTabElement(tab))
     }
 }
 
 async function getTabWindowElement(tab) {
     const el = document.createElement('div')
-    el.classList.add('list-window')
+    el.classList.add(LIST_WINDOW_CLASS)
 
     const title = document.createElement('div')
     title.classList.add('list-window-title')
@@ -66,7 +82,7 @@ async function getTabWindowElement(tab) {
 
 function getTabElement(tab) {
     const el = document.createElement('div')
-    el.classList.add('list-tab')
+    el.classList.add(LIST_TAB_CLASS)
     
     const icon = document.createElement('img')
     icon.classList.add('list-tab-icon')
@@ -91,13 +107,6 @@ function getTabElement(tab) {
     return el
 }
 
-function getCurrentBadgeElement() {
-    const el = document.createElement('div')
-    el.classList.add('badge-active')
-    el.innerText = "active"
-    return el
-}
-
 async function getCurrentWindow() {
     return new Promise(resolve => {
         chrome.windows.getCurrent(
@@ -108,8 +117,6 @@ async function getCurrentWindow() {
 }
 
 function addSearchEventListener() {
-    const searchElement = document.getElementById('search')
-
     let debounceTimeoutId = null
     searchElement.addEventListener('input', (e) => {
         if (debounceTimeoutId) {
@@ -123,10 +130,10 @@ function addSearchEventListener() {
 
 function onSearchInput(input) {
     // improve search filter
-    const tabElements = document.getElementById('tabs').children
+    const tabElements = tabListRoot.children
     for(let i = 0; i < tabElements.length; i++) {
         const tabElement = tabElements[i]
-        if (tabElement.classList.contains('list-tab')) {
+        if (tabElement.classList.contains(LIST_TAB_CLASS)) {
             // is tab item
             if (isTabSearchHit(tabElement, input)) {
                 tabElement.classList.remove('d-none')
@@ -135,10 +142,57 @@ function onSearchInput(input) {
             }
         }
     }
+    selectFirstElementInTabList()
 }
 
 function isTabSearchHit(tabElement, input) {
     const titleLower = tabElement.lastElementChild.firstElementChild.innerText.toLowerCase()
     const inputLower = input.toLowerCase()
     return titleLower.includes(inputLower)
+}
+
+function selectFirstElementInTabList() {
+    const selectedTab = getSelectedTabInList()
+    if (selectedTab) {
+        selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
+    }
+    tabListRoot.querySelector(LIST_TAB_VISIBLE_QUERY_SELECOR).classList.add(LIST_TAB_SELECTED_CLASS)
+}
+
+function selectNextElementInTabList() {
+    const selectedTab = getSelectedTabInList()
+    if (selectedTab) {
+        selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
+
+        let nextElementSibling = selectedTab.nextElementSibling
+        while (
+            !nextElementSibling.classList.contains(LIST_TAB_CLASS) ||
+            nextElementSibling.classList.contains('d-none')
+        ) {
+            nextElementSibling = nextElementSibling.nextElementSibling
+        }
+        nextElementSibling.classList.add(LIST_TAB_SELECTED_CLASS)
+    } else {
+        selectFirstElementInTabList()
+    }
+}
+
+function getSelectedTabInList() {
+    return tabListRoot.querySelector('.' + LIST_TAB_SELECTED_CLASS)
+}
+
+function addKeyboardEventListeners() {
+    window.addEventListener('keypress', onKeypress)
+}
+
+function onKeypress(e) {
+    if (e.keyCode === KEY_CODE_ENTER) {
+        
+    }
+    else if (e.keyCode === KEY_CODE_ARROW_UP) {
+
+    }
+    else if (e.keyCode === KEY_CODE_ARROW_DOWN) {
+        
+    }
 }
