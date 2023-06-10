@@ -23,6 +23,8 @@
         body {
             background-color: var(--color-white);
             color: var(--color-dark);
+            display: flex;
+            flex-direction: column;
         }
 
         body.dark {
@@ -33,13 +35,13 @@
         html, body {
             width: 500px;
             height: 600px;
+            overflow: hidden;
         }
 
         #tabs {
             width: 100%;
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
+            flex-grow: 1;
+            overflow-y: auto;
         }
 
         .list-tab-icon {
@@ -93,7 +95,9 @@
     </style>
 </head>
 <body>
-    <input id="search" type="text" placeholder="Fast Tab">
+    <div id="search-container">
+        <input id="search" type="text" placeholder="Fast Tab">
+    </div>
     <div id="tabs"></div>
     <script src="popup.js"></script>
 </body>

@@ -156,25 +156,65 @@ function selectFirstElementInTabList() {
     if (selectedTab) {
         selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
     }
-    tabListRoot.querySelector(LIST_TAB_VISIBLE_QUERY_SELECOR).classList.add(LIST_TAB_SELECTED_CLASS)
+    const firstEleement = tabListRoot.querySelector(LIST_TAB_VISIBLE_QUERY_SELECOR)
+    if (firstEleement) {
+        selectTabElement(firstEleement)
+    }
 }
 
 function selectNextElementInTabList() {
     const selectedTab = getSelectedTabInList()
     if (selectedTab) {
-        selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
-
         let nextElementSibling = selectedTab.nextElementSibling
+        if (nextElementSibling === null) {
+            return
+        }
+
+        selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
         while (
             !nextElementSibling.classList.contains(LIST_TAB_CLASS) ||
             nextElementSibling.classList.contains('d-none')
         ) {
             nextElementSibling = nextElementSibling.nextElementSibling
+            if (nextElementSibling === null) {
+                nextElementSibling = selectedTab
+                break
+            }
         }
-        nextElementSibling.classList.add(LIST_TAB_SELECTED_CLASS)
+        selectTabElement(nextElementSibling)
     } else {
         selectFirstElementInTabList()
     }
+}
+
+function selectPreviousElementInTabList() {
+    const selectedTab = getSelectedTabInList()
+    if (selectedTab) {
+        let previousElementSibling = selectedTab.previousElementSibling
+        if (previousElementSibling === null) {
+            return
+        }
+
+        selectedTab.classList.remove(LIST_TAB_SELECTED_CLASS)
+        while (
+            !previousElementSibling.classList.contains(LIST_TAB_CLASS) ||
+            previousElementSibling.classList.contains('d-none')
+        ) {
+            previousElementSibling = previousElementSibling.previousElementSibling
+            if (previousElementSibling === null) {
+                previousElementSibling = selectedTab
+                break
+            }
+        }
+        selectTabElement(previousElementSibling)
+    } else {
+        selectFirstElementInTabList()
+    }
+}
+
+function selectTabElement(element) {
+    element.classList.add(LIST_TAB_SELECTED_CLASS)
+    element.scrollIntoViewIfNeeded()
 }
 
 function getSelectedTabInList() {
@@ -182,17 +222,20 @@ function getSelectedTabInList() {
 }
 
 function addKeyboardEventListeners() {
-    window.addEventListener('keypress', onKeypress)
+    window.addEventListener('keydown', onKeydown)
 }
 
-function onKeypress(e) {
+function onKeydown(e) {
+
     if (e.keyCode === KEY_CODE_ENTER) {
-        
+        e.preventDefault()
     }
     else if (e.keyCode === KEY_CODE_ARROW_UP) {
-
+        e.preventDefault()
+        selectPreviousElementInTabList()
     }
     else if (e.keyCode === KEY_CODE_ARROW_DOWN) {
-        
+        e.preventDefault()
+        selectNextElementInTabList()
     }
 }
