@@ -8,7 +8,6 @@ const KEY_CODE_ARROW_LEFT = 37
 const KEY_CODE_ARROW_UP = 38
 const KEY_CODE_ARROW_RIGHT = 39
 const KEY_CODE_ARROW_DOWN = 40
-
 const searchElement = document.getElementById('search')
 const tabListRoot = document.getElementById('tabs')
 
@@ -22,7 +21,7 @@ getTabs().then(tabs => {
     addKeyboardEventListeners()
 
     // timeout until it renders html
-    setTimeout(selectFirstElementInTabList, 1)
+    setTimeout(selectFirstElementInTabList, 10)
 })
 
 function sortTabsByWindowId(tabs) {
@@ -83,6 +82,7 @@ async function getTabWindowElement(tab) {
 function getTabElement(tab) {
     const el = document.createElement('div')
     el.classList.add(LIST_TAB_CLASS)
+    el.setAttribute('data-tab-id', tab.id)
     
     const icon = document.createElement('img')
     icon.classList.add('list-tab-icon')
@@ -226,9 +226,14 @@ function addKeyboardEventListeners() {
 }
 
 function onKeydown(e) {
-
     if (e.keyCode === KEY_CODE_ENTER) {
         e.preventDefault()
+        const selectedTab = getSelectedTabInList()
+        if (selectedTab === null) {
+            return
+        }
+        const tabId = parseInt(selectedTab.getAttribute('data-tab-id'))
+        focusChromeTab(tabId)
     }
     else if (e.keyCode === KEY_CODE_ARROW_UP) {
         e.preventDefault()
@@ -239,3 +244,8 @@ function onKeydown(e) {
         selectNextElementInTabList()
     }
 }
+
+function focusChromeTab(tabId) {
+    chrome.tabs.update(tabId, { active: true })
+}
+

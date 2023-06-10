@@ -7,5 +7,16 @@
     ],
     "action": {
         "default_popup": "src/popup.html"
+    },
+    "commands": {
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Alt+F",
+                "linux": "Alt+F",
+                "windows": "Alt+F",
+                "mac": "Alt+F"
+            },
+            "description": "Open the extension popup"
+        }
     }
 }
