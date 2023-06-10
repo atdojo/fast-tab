@@ -1,5 +1,6 @@
 const SEARCH_DEBOUNCE_MILLISECONDS = 50
 const LIST_TAB_CLASS = 'list-tab'
+const LIST_SEARCH_IGNORE_CLASS = 'list-search-ignore'
 const LIST_TAB_VISIBLE_QUERY_SELECOR = '.' + LIST_TAB_CLASS + ':not(.d-none)'
 const LIST_WINDOW_CLASS = 'list-window'
 const LIST_TAB_SELECTED_CLASS = 'list-tab--selected'
@@ -8,6 +9,8 @@ const KEY_CODE_ARROW_LEFT = 37
 const KEY_CODE_ARROW_UP = 38
 const KEY_CODE_ARROW_RIGHT = 39
 const KEY_CODE_ARROW_DOWN = 40
+const TAB_ID_SEARCH_IN_NEW_TAB = 'search-in-new-tab'
+const WINDOW_ID_SEARCH_IN_NEW_TAB = TAB_ID_SEARCH_IN_NEW_TAB
 const searchElement = document.getElementById('search')
 const tabListRoot = document.getElementById('tabs')
 
@@ -20,8 +23,10 @@ getTabs().then(tabs => {
     addSearchEventListener()
     addKeyboardEventListeners()
 
-    // timeout until it renders html
-    setTimeout(selectFirstElementInTabList, 10)
+    // timeout until it renders tabs
+    setTimeout(() => {
+        selectFirstElementInTabList()
+    }, 10)
 })
 
 function sortTabsByWindowId(tabs) {
@@ -49,7 +54,7 @@ async function getTabs(queryOptions = {}) {
 async function renderTabs(tabs) {
     let lastWindowId = null
     tabListRoot.innerHTML = ''
-    for(let i = 0; i < tabs.length; i++) {
+    for (let i = 0; i < tabs.length; i++) {
         const tab = tabs[i]
         if (lastWindowId !== tab.windowId) {
             lastWindowId = tab.windowId
@@ -58,6 +63,7 @@ async function renderTabs(tabs) {
         }
         tabListRoot.appendChild(getTabElement(tab))
     }
+    tabListRoot.appendChild(getTabElementSearchInNewTab())
 }
 
 async function getTabWindowElement(tab) {
@@ -84,7 +90,8 @@ function getTabElement(tab) {
     el.classList.add(LIST_TAB_CLASS)
     el.setAttribute('data-tab-id', tab.id)
     el.setAttribute('data-window-id', tab.windowId)
-    
+    el.setAttribute('data-url', tab.url)
+
     const icon = document.createElement('img')
     icon.classList.add('list-tab-icon')
     icon.src = tab.favIconUrl
@@ -106,6 +113,17 @@ function getTabElement(tab) {
     el.appendChild(icon)
     el.appendChild(content)
     return el
+}
+
+function getTabElementSearchInNewTab() {
+    const element = getTabElement({
+        favIconUrl: 'https://www.google.com/favicon.ico',
+        title: 'Search in new tab...',
+        id: TAB_ID_SEARCH_IN_NEW_TAB,
+        windowId: TAB_ID_SEARCH_IN_NEW_TAB
+    })
+    element.classList.add(LIST_SEARCH_IGNORE_CLASS)
+    return element
 }
 
 async function getCurrentWindow() {
@@ -132,10 +150,12 @@ function addSearchEventListener() {
 function onSearchInput(input) {
     // improve search filter
     const tabElements = tabListRoot.children
-    for(let i = 0; i < tabElements.length; i++) {
+    for (let i = 0; i < tabElements.length; i++) {
         const tabElement = tabElements[i]
-        if (tabElement.classList.contains(LIST_TAB_CLASS)) {
-            // is tab item
+        if (tabElement.classList.contains(LIST_TAB_CLASS)
+            && !tabElement.classList.contains(LIST_SEARCH_IGNORE_CLASS)
+        ) {
+            // is tab item that should be filtered
             if (isTabSearchHit(tabElement, input)) {
                 tabElement.classList.remove('d-none')
             } else {
@@ -148,8 +168,9 @@ function onSearchInput(input) {
 
 function isTabSearchHit(tabElement, input) {
     const titleLower = tabElement.lastElementChild.firstElementChild.innerText.toLowerCase()
+    const url = tabElement.getAttribute('data-url')
     const inputLower = input.toLowerCase()
-    return titleLower.includes(inputLower)
+    return titleLower.includes(inputLower) || url.includes(inputLower)
 }
 
 function selectFirstElementInTabList() {
@@ -233,9 +254,16 @@ function onKeydown(e) {
         if (selectedTab === null) {
             return
         }
-        const tabId = parseInt(selectedTab.getAttribute('data-tab-id'))
-        const windowId = parseInt(selectedTab.getAttribute('data-window-id'))
-        focusChromeTab(tabId, windowId)
+
+        const tabId = selectedTab.getAttribute('data-tab-id')
+        const windowId = selectedTab.getAttribute('data-window-id')
+        if (tabId === TAB_ID_SEARCH_IN_NEW_TAB) {
+            chrome.tabs.create({ url: 'https://www.google.com/search?q=' + searchElement.value })
+            return
+        }
+
+
+        focusChromeTab(parseInt(tabId), parseInt(windowId))
     }
     else if (e.keyCode === KEY_CODE_ARROW_UP) {
         e.preventDefault()
