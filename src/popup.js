@@ -83,6 +83,7 @@ function getTabElement(tab) {
     const el = document.createElement('div')
     el.classList.add(LIST_TAB_CLASS)
     el.setAttribute('data-tab-id', tab.id)
+    el.setAttribute('data-window-id', tab.windowId)
     
     const icon = document.createElement('img')
     icon.classList.add('list-tab-icon')
@@ -233,7 +234,8 @@ function onKeydown(e) {
             return
         }
         const tabId = parseInt(selectedTab.getAttribute('data-tab-id'))
-        focusChromeTab(tabId)
+        const windowId = parseInt(selectedTab.getAttribute('data-window-id'))
+        focusChromeTab(tabId, windowId)
     }
     else if (e.keyCode === KEY_CODE_ARROW_UP) {
         e.preventDefault()
@@ -245,7 +247,8 @@ function onKeydown(e) {
     }
 }
 
-function focusChromeTab(tabId) {
+function focusChromeTab(tabId, windowId) {
+    chrome.windows.update(windowId, { focused: true });
     chrome.tabs.update(tabId, { active: true })
 }
 
