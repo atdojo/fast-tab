@@ -23,6 +23,9 @@ Hello World :close
 `:mute` - Muted all filtered tabs  
 `:unmute` - Unmute all filtered tabs  
 `:reload` - Reload all filtered tabs
+`:detach` - Detach all filtered tabs to a new window
+`:detachsingle` - Detach all filtered tabs into seperate windows
+`:merge` - Merge all filtered tabs into one window
 
 # Installation
 1. Download [Zip](https://github.com/atdojo/fast-tab/archive/refs/heads/main.zip)
